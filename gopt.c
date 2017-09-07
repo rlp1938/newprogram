@@ -27,7 +27,7 @@ options_t process_options(int argc, char **argv)
 	synopsis = thesynopsis();
 	helptext = thehelp();
 
-	optstring = ":hd:o";	// initialise
+	optstring = ":hd:ox:";	// initialise
 
 	/* declare and set defaults for local variables. */
 
@@ -36,15 +36,19 @@ options_t process_options(int argc, char **argv)
 	// initialise non-zero defaults below
 
 	int c;
-	char joinbuffer[PATH_MAX];	// collects list of extra software
+	char joinbuffer[PATH_MAX];	// collects list of extra software.
 	joinbuffer[0] = 0;
 	const int max = PATH_MAX;
+	char databuffer[PATH_MAX];	// collects list of other data.
+	databuffer[0] = 0;
+
 	while(1) {
 		int this_option_optind = optind ? optind : 1;
 		int option_index = 0;
 		static struct option long_options[] = {
 		{"help",		0,	0,	'h' },
 		{"depends",		1,	0,	'd' },
+		{"extra-dist",	1,	0,	'x' },
 		{"with-options",0,	0,	'o' },
 		{0,	0,	0,	0 }
 		};
@@ -69,7 +73,9 @@ options_t process_options(int argc, char **argv)
 		case 'o':	// software dependencies gopt.[c|h]for Makefile.am
 		strjoin(joinbuffer, ' ',"gopt.h", max);
 		strjoin(joinbuffer, ' ',"gopt.c", max);
-		opts.do_options = 1;
+		break;
+		case 'x':	// other data for Makefile.am
+		strjoin(databuffer, ' ',optarg, max);
 		break;
 		case ':':
 			fprintf(stderr, "Option %s requires an argument\n",
@@ -84,6 +90,9 @@ options_t process_options(int argc, char **argv)
 		} // switch()
 	} // while()
 	opts.software_dependencies = xstrdup(joinbuffer);
+	if (strlen(databuffer)) {
+		opts.extra_data = xstrdup(databuffer);
+	}
 	return opts;
 } // process_options()
 
@@ -128,7 +137,11 @@ char *thehelp(void)
   "\tThe files gopt.c and gopt.h will automatically be included in\n"
   "\tthe sofware dependencies list. Also, the stubs having that name\n"
   "\twill be copied into the new program dir from the specified stub\n"
-  "\tlibrary.\n"
+  "\tlibrary.\n\n"
+  "\t--extra-dist, -x data_file or 'file1 file2 ...'\n"
+  "\tFile(s) to be installed as data such as config files.\n"
+  "\t--extra-dist may be invoked more than once if needed or the list\n"
+  "\tof files may be quote protected for a single invocation.\n\n"
   ;
 	return ret;
 } // thehelp()

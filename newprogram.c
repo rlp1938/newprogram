@@ -55,6 +55,7 @@ static char *swdepends(char *optslist);
 static char *cfgpath(char *, char *, char *);
 static char *makefullpath(char *, char *);
 static void linkorcopy(const char *, const char *, char *);
+static void extramakefile_am(char *);
 
 int main(int argc, char **argv)
 {	/* newprogram - write the initial files for a new C program. */
@@ -75,16 +76,13 @@ int main(int argc, char **argv)
 	newdir(pi->dir);
 	xchdir(pi->dir);
 	writemakefile_am(pi, "am.mak");	// from $HOME/.config/...
-	char *extras;
-	extras = swdepends(opt.software_dependencies);
+	char *extras = swdepends(opt.software_dependencies);
 	updmakefile_am(pi->exe, extras);
-	/* use extras to make copies of anything that matches in
-	 * Srclib/Stubs (eg gopt.h+c) and make hard links to anything
-	 * that matches in Srclib/Components. The software dependencies
-	 * can be anything so just output a warning for any items in the
-	 * extras list that don't find a match.
-	*/
 	linkorcopy(stubdir, compdir, extras);
+	if (opt.extra_data) {
+		extramakefile_am(opt.extra_data);
+		free(opt.extra_data);
+	}
 	vfree(compdir, stubdir, NULL);
 	free(extras);
 	destroyprogid(pi);
@@ -286,3 +284,33 @@ linkorcopy(const char *stubdir, const char *compdir, char *swdeplist)
 	} // while()
 } // linkorcopy()
 
+void
+extramakefile_am(char *extraslist)
+{/* writes the extras list into the proper place in Makefile.am */
+	size_t xlen = strlen(extraslist);
+	mdata *md = readfile("Makefile.am", 1, 2 * xlen);	// to insert 2x
+	char *ip = memmem(md->fro, md->to - md->fro, "_DATA=",
+						strlen("_DATA="));
+	if (!ip) {
+		fputs("Corrupted Makefile.am, no _DATA=\n", stderr);
+		exit(EXIT_FAILURE);
+	}
+	ip = memchr(ip, '\n', md->to - ip);
+	char *moveto = ip + xlen;
+	memmove(moveto, ip, md->to - ip);
+	memcpy(ip, extraslist, xlen);
+	md->to += xlen;
+
+	ip = memmem(md->fro, md->to - md->fro, "EXTRA_DIST=",
+						strlen("EXTRA_DIST="));
+	if (!ip) {
+		fputs("Corrupted Makefile.am, no EXTRA_DIST=\n", stderr);
+		exit(EXIT_FAILURE);
+	}
+	ip = memchr(ip, '\n', md->to - ip);
+	moveto = ip + xlen;
+	memmove(moveto, ip, md->to - ip);
+	memcpy(ip, extraslist, xlen);
+	md->to += xlen;
+	writefile("Makefile.am", md->fro, md->to, "w");
+} // extramakefile_am()

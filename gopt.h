@@ -27,7 +27,7 @@ char *synopsis;
 
 typedef struct options_t {	// to be initialised with required vars.
 char *software_dependencies;
-int do_options;
+char *extra_data;	// eg stuff like config files.
 } options_t;
 
 void dohelp(int forced);

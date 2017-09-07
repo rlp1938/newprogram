@@ -1,0 +1,16 @@
+/autom4te.cache/
+/autoscan.log
+/config.h
+/config.h.in~
+/config.log
+/config.status
+/configure.scan
+/.deps/
+/newprogram
+/newprogram.plist/
+/newprogram.t2t
+/Makefile
+/stamp-h1
+/test*
+/Test*
+/build.sh

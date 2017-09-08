@@ -75,4 +75,7 @@ newdir(const char *);
 void
 xchdir(const char *);
 
+int
+exists_dir(const char *);
+
 #endif

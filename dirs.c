@@ -179,3 +179,20 @@ xchdir(const char *path)
 	}
 } // xchdir()
 
+int
+exists_dir(const char *)
+{ /* return 1 if the dir exists, 0 otherwise */
+	struct stat sb;
+	int res = stat(path, &sb);
+	if (res == -1) {
+		res = 0;
+	} else {
+		res = 1;
+	}
+	if (res && S_ISDIR(sb.st_mode)) {
+		res = 1;
+	} else {
+		res = 0;
+	}
+	return res;
+q} // exists_dir()

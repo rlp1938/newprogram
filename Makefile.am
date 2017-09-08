@@ -4,16 +4,17 @@
 # Set up initially to use GDB, change to optimised afterward.
 AM_CFLAGS=-Wall -Wextra -g -O0 -D_GNU_SOURCE=1
 
-bin_PROGRAMS=sheesh
+bin_PROGRAMS=newprogram
 
-sheesh_SOURCES=sheesh.c
+newprogram_SOURCES=newprogram.c dirs.c dirs.h files.c files.h str.c \
+str.h firstrun.c firstrun.h gopt.h gopt.c
 
-man_MANS=sheesh.1
+man_MANS=newprogram.1
 
 # next lines to be hand edited
 # send <whatever> to $(prefix)/share/
-shedir=$(datadir)/sheesh
-she_DATA=#add this by hand after
-# ensure that sheesh.1 and any other config files get put in the tarball.
-# also stops make distcheck bringing an error.
-EXTRA_DIST=sheesh.1
+newdir=$(datadir)/newprogram
+new_DATA=paths.cfg am.mak
+# Ensure that newprogram.1 and any other config files get put in the
+# tarball. Also stops `make distcheck` bringing an error.
+EXTRA_DIST=newprogram.1 paths.cfg am.mak

@@ -5,6 +5,7 @@
 /config.log
 /config.status
 /configure.scan
+/configure
 /.deps/
 /newprogram
 /newprogram.plist/

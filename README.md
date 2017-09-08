@@ -55,4 +55,4 @@ _Srclib/Stubs_ and _Srclib/Components_. _Stubs_ is used for boilerplate code tha
 
 On first run of _newprogram_ configuration files will be copied in to _$HOME/.config/newprogram/_ and you will be invited to edit those files so as to name your own directory structure.
 ### Your source code library and boilerplate source
-The files _gopt.c_ and _gopt.h_ are candidates to copy into the boilerplate sub dir, because on re-using them they must be idividually edited to fit the requirements of the program under construction. The other header and C files may or may not be useful for your needs. If they are they can be linked into the _Components_ sub dir along with whatever other library source software is in your possession.
+The files _gopt.c_ and _gopt.h_ are candidates to copy into the boilerplate sub dir, because on re-using them they must be individually edited to fit the requirements of the program under construction. The other header and C files may or may not be useful for your needs. If they are they can be linked into the _Components_ sub dir along with whatever other library source software is in your possession.

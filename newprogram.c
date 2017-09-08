@@ -45,6 +45,7 @@ typedef struct progid { /* vars to use in Makefile.am etc */
 #include "dirs.h"
 #include "files.h"
 #include "gopt.h"
+#include "firstrun.h"
 
 static progid *makeprogname(const char *);
 static void ulstr(int, char *);
@@ -59,6 +60,14 @@ static void extramakefile_am(char *);
 
 int main(int argc, char **argv)
 {	/* newprogram - write the initial files for a new C program. */
+	if (!checkfirstrun("newprogram", "am.mak", "paths.cfg", NULL)) {
+		firstrun("newprogram", "am.mak", "paths.cfg", NULL);
+		fprintf(stderr,
+				"Please edit paths.cfg in %s to meet your needs.\n",
+				getenv("HOME"));
+		exit(EXIT_SUCCESS);
+	}
+
 	options_t opt = process_options(argc, argv);
 	progid *pi = makeprogname(argv[optind]);
 	printf("%s %s %s %s %s\n",pi->dir, pi->exe, pi->src, pi->man,
@@ -199,6 +208,8 @@ char
 {/* optslist may have software names in the form of xyz.h+c.
   * Any such names will be expanded to xyz.h and xyz.c
 */
+	if (!optslist) return NULL;
+
 	size_t olen = strlen(optslist);
 	if(!olen) return NULL;
 	size_t blen = 2*olen;
@@ -261,6 +272,7 @@ linkorcopy(const char *stubdir, const char *compdir, char *swdeplist)
    * the current dir. Any filenames that exist in neither place will be
    * warned about (stderr, non fatal).
   */
+	if (!swdeplist) return;
 	char **depwords = list2array(swdeplist, ' ');
 	size_t index = 0;
 	size_t max = PATH_MAX;

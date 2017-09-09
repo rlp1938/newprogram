@@ -161,8 +161,11 @@ doclosedir(DIR *dp)
 } // doclosedir
 
 void
-newdir(const char *p)
+newdir(const char *p, int mayexist)
 { /* mkdir() with error handling. Also have hard wired mode. */
+	if (mayexist) {
+		if(exists_dir(p)) return;
+	}
 	const int crmode = 0775;	// stat yielded this value.
 	if (mkdir(p, crmode) == -1) {
 		perror(p);

@@ -70,7 +70,7 @@ void
 initfsoslect(unsigned char[]);
 
 void
-newdir(const char *);
+newdir(const char *, int);
 
 void
 xchdir(const char *);

@@ -66,9 +66,9 @@ create a directory where program files reside. In addition to that you
 will need to have or make two directories under the
 _Programs_ directory. In my setup I have them as
 _Srclib/Stubs_ and _Srclib/Components_. _Stubs_ is used for boilerplate
- code that is to be copied into the project dir. The
- _Components_ sub dir is to hold working library software in source code
- form.
+code that is to be copied into the project dir. The
+_Components_ sub dir is to hold working library software in source code
+form.
 
 On first run of _newprogram_ configuration files will be copied in to
 _$HOME/.config/newprogram/_ and you will be invited to edit those files

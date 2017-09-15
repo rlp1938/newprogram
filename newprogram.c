@@ -80,8 +80,10 @@ char *gprname;	// set early in the piece and used near the end.
 
 int main(int argc, char **argv)
 {	/* newprogram - write the initial files for a new C program. */
-	if (!checkfirstrun("newprogram", "am.mak", "paths.cfg", NULL)) {
-		firstrun("newprogram", "am.mak", "paths.cfg", NULL);
+	if (!checkfirstrun("newprogram", "am.mak", "paths.cfg",
+						"goptC", "goptH", "mainC", NULL)) {
+		firstrun"newprogram", "am.mak", "paths.cfg",
+						"goptC", "goptH", "mainC", NULL);
 		fprintf(stderr,
 			"Please edit paths.cfg in %s.config to meet your needs.\n",
 				getenv("HOME"));

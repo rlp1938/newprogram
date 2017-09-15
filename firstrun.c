@@ -53,7 +53,7 @@ void firstrun(char *progname, ...)
 	// To
 	char pathto[PATH_MAX];
 	sprintf(pathto, "%s/.config/%s/", getenv("HOME"), progname);
-	if(!exists_dir(pathto)) newdir(pathto);
+	if(!exists_dir(pathto)) newdir(pathto, 0);
 	size_t tolen = strlen(pathto);
 	// From
 	char pathfr[PATH_MAX];

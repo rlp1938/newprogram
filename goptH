@@ -20,21 +20,17 @@
 
 #ifndef GOPT_H
 #define GOPT_H
-#include "str.h"
 char *optstring;
 char *helptext;
 char *synopsis;
 
-typedef struct options_t {
-	int hasopts;			// main() needs this flag.
-	char *software_deps;	// source files to include.
-	char *extra_data;		// eg stuff like config files.
-	char *options_list;		// code to describe options for new program.
+typedef struct options_t {	// to be initialised with required vars.
+/* header target */
 } options_t;
 
 void dohelp(int forced);
 options_t process_options(int argc, char **argv);
-char *thesynopsis(void);
 char *thehelp(void);
+char *thesynopsis(void);
 
 #endif

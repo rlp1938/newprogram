@@ -27,7 +27,7 @@ options_t process_options(int argc, char **argv)
 	synopsis = thesynopsis();
 	helptext = thehelp();
 
-	optstring = ":hd:ox:";	// initialise
+	optstring = ":hd:ox:n:";	// initialise
 
 	/* declare and set defaults for local variables. */
 
@@ -36,11 +36,13 @@ options_t process_options(int argc, char **argv)
 	// initialise non-zero defaults below
 
 	int c;
+	const int max = PATH_MAX;
 	char joinbuffer[PATH_MAX];	// collects list of extra software.
 	joinbuffer[0] = 0;
-	const int max = PATH_MAX;
 	char databuffer[PATH_MAX];	// collects list of other data.
 	databuffer[0] = 0;
+	char optionsbuffer[PATH_MAX];	// collects list of options codes.
+	optionsbuffer[0] = 0;
 
 	while(1) {
 		int this_option_optind = optind ? optind : 1;
@@ -50,6 +52,7 @@ options_t process_options(int argc, char **argv)
 		{"depends",		1,	0,	'd' },
 		{"extra-dist",	1,	0,	'x' },
 		{"with-options",0,	0,	'o' },
+		{"options-list",1,	0,	'n' },
 		{0,	0,	0,	0 }
 		};
 
@@ -71,8 +74,19 @@ options_t process_options(int argc, char **argv)
 		strjoin(joinbuffer, ' ',optarg, max);
 		break;
 		case 'o':	// software dependencies gopt.[c|h]for Makefile.am
+		// deal with -n seen before -o, or -o not done.
+		if (opts.hasopts) break;
 		strjoin(joinbuffer, ' ',"gopt.h", max);
 		strjoin(joinbuffer, ' ',"gopt.c", max);
+		opts.hasopts = 1;
+		break;
+		case 'n':	// code strings for options generation.
+		// deal with -o not done, or done out of order.
+		strjoin(optionsbuffer, ' ', optarg, max);
+		if (opts.hasopts) break;
+		strjoin(joinbuffer, ' ',"gopt.h", max);
+		strjoin(joinbuffer, ' ',"gopt.c", max);
+		opts.hasopts = 1;
 		break;
 		case 'x':	// other data for Makefile.am
 		strjoin(databuffer, ' ',optarg, max);
@@ -89,9 +103,12 @@ options_t process_options(int argc, char **argv)
 		break;
 		} // switch()
 	} // while()
-	opts.software_dependencies = xstrdup(joinbuffer);
+	opts.software_deps = xstrdup(joinbuffer);
 	if (strlen(databuffer)) {
 		opts.extra_data = xstrdup(databuffer);
+	}
+	if (strlen(optionsbuffer)) {
+		opts.options_list = xstrdup(optionsbuffer);
 	}
 	return opts;
 } // process_options()
@@ -103,45 +120,67 @@ void dohelp(int forced)
   exit(forced);
 } // dohelp()
 
-char *thesynopsis(void)
-{	/* Does nothing except get this text off the top of the page */
+char *thesynopsis()
+{ /* Only purpose is to get this stuff off the top of the page. */
 	char *ret =
   "\tSYNOPSIS\n"
-  "\tmakenewprogram prname\n"
-  "\tSets up a new C program according to prname.\n"
-  "\tIf the name given is eg someProg, it will create a dir, \n"
-  "\tSomeprog under the user defined standard programs directory\n"
-  "\tand set up a Makefile.am within that directory. The names placed\n"
-  "\tin Makefile.am will be someprog for the bin name, someprog.c for\n"
-  "\tsource code and someprog.1 for the man page. The required three\n"
-  "\tletter names used by autotools will be 'som' in this example.\n"
-  "\tThe cases shown above will be always used regardless off the\n"
-  "\tcase set in the user input.\n\n"
+  "\tnewprogram [options] program_name\n"
+  "\tSets up a new C program according to program_name.\n"
+  "\tIf the name given is eg someProg, it will create a dir, Someprog"
+  " under\n\tthe user defined standard programs directory and set up "
+  "a Makefile.am\n\twithin that directory. The names placed in "
+  "Makefile.am will be\n\t'someprog' for the bin name, 'someprog.c' for"
+  " source code and\n\t'someprog.1' for the man page. The required "
+  "three letter names used\n\tby autotools will be 'som' in this "
+  "example. The cases shown above will\n\tbe always used regardless"
+  " off the case set in the user input.\n\n"
+  "\tDESCRIPTION\n"
+  "\tOn first run some configuration files will be copied into: \n"
+  "\t$HOME/.config/newprogram. You will be requested to edit "
+  "'paths.cfg' to\n\tprovide the pathname of your programs dir, and "
+  " 2 subdirs, one for\n\tboilerplate code to be copied into the "
+  "new project dir, and the other\n\tfor your library source code "
+  "which will be hard linked into your\n\tproject dir.\n"
+  "\tIn the end, once the autotools programs are run, the generated"
+  "\n\tprogram should make and be able to be run, choosing the "
+  "specified\n\toptions.\n\n"
   ;
-	return ret;
-} // thesynopsis()
+  return ret;
+}
 
-char *thehelp(void)
-{	/* Does nothing except get this text off the top of the page */
+char *thehelp()
+{
 	char *ret =
   "\tOPTIONS\n"
   "\t-h, --help\n"
   "\tOutputs this help message and then quits.\n\n"
   "\t--depends, -d software_name\n"
-  "\tSpecify additional software dependencies to be recorded in\n"
-  "\tMakefile.am. Names that have both a header file and C program\n"
-  "\tfile may be input as 'name.h+c'.\n"
-  "\tYou may use the option as -d \"name1.h+c name2.c+h ...\" or use\n"
-  "\tthe option multiple times on different names.\n\n"
+  "\tSpecify additional software dependencies to be recorded in "
+  "Makefile.am.\n\tNames that have both a header file and C program "
+  "file may be input as\n\t'name.h+c'. "
+  "You may use the option as -d \"name1.h+c name2.c+h ...\" or\n\tuse "
+  "the option multiple times on different names.\n\n"
+
   "\t--with-options, -o\n"
-  "\tThe files gopt.c and gopt.h will automatically be included in\n"
-  "\tthe sofware dependencies list. Also, the stubs having that name\n"
-  "\twill be copied into the new program dir from the specified stub\n"
-  "\tlibrary.\n\n"
+  "\tThe files gopt.c and gopt.h will automatically be included in "
+  "the\n\tsoftware dependencies list. These will be generated from"
+  " stub files\n\tlocated in your config dir.\n\n"
+
   "\t--extra-dist, -x data_file or 'file1 file2 ...'\n"
-  "\tFile(s) to be installed as data such as config files.\n"
-  "\t--extra-dist may be invoked more than once if needed or the list\n"
-  "\tof files may be quote protected for a single invocation.\n\n"
+  "\tFile(s) to be installed as data such as config files. "
+  "Extra-dist may\n\tbe invoked more than once if needed or the list "
+  "of files may be quote\n\tprotected for a single invocation.\n\n"
+
+  "\t--options-list, -n optcode\n"
+  "\twhere optcode looks like this 'xextra:', x is the short "
+  "option name,\n\textra is the long option name, and the string may be"
+  " ended with 0, 1\n\tor 2 occurrences of ':', indicating 0; no option"
+  " argument,\n\t1; option argument is required, and 2; an option "
+  "argument is optional.\n"
+  "\tAll code required to process your named options will be "
+  "generated\n\tincluding some 'nonsense' help text to describe these"
+  " options."
+  "\n\n"
   ;
-	return ret;
-} // thehelp()
+  return ret;
+}

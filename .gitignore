@@ -15,3 +15,5 @@
 /test*
 /Test*
 /build.sh
+/runit.sh
+/xbuildsheesh.sh

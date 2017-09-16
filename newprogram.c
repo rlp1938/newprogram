@@ -35,11 +35,13 @@
 #include <errno.h>
 
 typedef struct progid { /* vars to use in Makefile.am etc */
-	char *dir;	// directory name.
-	char *exe;	// program name.
-	char *src;	// source code name.
-	char *thr;	// three letter abbreviation.
-	char *man;	// man page name.
+	char *dir;		// directory name.
+	char *exe;		// program name.
+	char *src;		// source code name.
+	char *thr;		// three letter abbreviation.
+	char *man;		// man page name.
+	char *author;	// program author name.
+	char *email;	// author email address,
 } progid;
 
 typedef struct oplist_t {	/* var to use when generating options */
@@ -80,13 +82,14 @@ char *gprname;	// set early in the piece and used near the end.
 
 int main(int argc, char **argv)
 {	/* newprogram - write the initial files for a new C program. */
-	if (!checkfirstrun("newprogram", "am.mak", "paths.cfg",
+	if (!checkfirstrun("newprogram", "am.mak", "prdata.cfg",
 						"goptC", "goptH", "mainC", NULL)) {
-		firstrun"newprogram", "am.mak", "paths.cfg",
+		firstrun("newprogram", "am.mak", "prdata.cfg",
 						"goptC", "goptH", "mainC", NULL);
 		fprintf(stderr,
-			"Please edit paths.cfg in %s.config to meet your needs.\n",
-				getenv("HOME"));
+					"Please edit prdata.cfg in %s.config/newprogram"
+					" to meet your needs.\n",
+					getenv("HOME"));
 		exit(EXIT_SUCCESS);
 	}
 	options_t opt = process_options(argc, argv);
@@ -99,9 +102,9 @@ int main(int argc, char **argv)
 			pi->thr);
 	gprname = argv[optind];	// used toward the end of the program.
 	// get location of boilerplate code (if any), and source library
-	char *prog = cfgpath("newprogram", "paths.cfg", "progdir");
-	char *stub = cfgpath("newprogram", "paths.cfg", "stubdir");
-	char *comp = cfgpath("newprogram", "paths.cfg", "compdir");
+	char *prog = cfgpath("newprogram", "prdata.cfg", "progdir");
+	char *stub = cfgpath("newprogram", "prdata.cfg", "stubdir");
+	char *comp = cfgpath("newprogram", "prdata.cfg", "compdir");
 	char *tmp = pi->dir;	// preserve it to free() it.
 	pi->dir = makefullpath(prog, pi->dir);
 	free(tmp);
@@ -117,6 +120,10 @@ int main(int argc, char **argv)
 	updmakefile_am(pi->exe, extras);
 	// copy in boilerplate and link library source
 	linkorcopy(stubdir, compdir, extras);
+	if (opt.hasopts) {	// add gopt.h and gopt.c to Makefile.am
+		updmakefile_am(pi->exe, " gopt.c gopt.h");
+	}
+
 	// add extra-dist to Makefile.am if optioned.
 	if (opt.extra_data) {
 		extramakefile_am(opt.extra_data);
@@ -156,6 +163,10 @@ progid
 	strcpy(name, lcname);
 	name[0] = toupper(name[0]);
 	prid->dir = xstrdup(name);
+	// to be filled in later
+	prid->author = NULL;
+	prid->email = NULL;
+
 	return prid;
 } // makeprogname()
 
@@ -187,7 +198,8 @@ ulstr(int ul, char *b)
 void
 destroyprogid(progid *pi)
 {
-	vfree(pi->exe, pi->src, pi->man, pi->thr, pi->dir, pi, NULL);
+	vfree(pi->exe, pi->src, pi->man, pi->thr, pi->dir, pi->author,
+	pi->email, pi, NULL);
 } // destroyprogid()
 
 void

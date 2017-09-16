@@ -73,20 +73,13 @@ options_t process_options(int argc, char **argv)
 		case 'd':	// other software dependencies for Makefile.am
 		strjoin(joinbuffer, ' ',optarg, max);
 		break;
-		case 'o':	// software dependencies gopt.[c|h]for Makefile.am
+		case 'o':	// just set a flag for main()
 		// deal with -n seen before -o, or -o not done.
-		if (opts.hasopts) break;
-		strjoin(joinbuffer, ' ',"gopt.h", max);
-		strjoin(joinbuffer, ' ',"gopt.c", max);
 		opts.hasopts = 1;
 		break;
 		case 'n':	// code strings for options generation.
-		// deal with -o not done, or done out of order.
 		strjoin(optionsbuffer, ' ', optarg, max);
-		if (opts.hasopts) break;
-		strjoin(joinbuffer, ' ',"gopt.h", max);
-		strjoin(joinbuffer, ' ',"gopt.c", max);
-		opts.hasopts = 1;
+		opts.hasopts = 1;	// generates -o option anyway
 		break;
 		case 'x':	// other data for Makefile.am
 		strjoin(databuffer, ' ',optarg, max);
@@ -137,7 +130,7 @@ char *thesynopsis()
   "\tDESCRIPTION\n"
   "\tOn first run some configuration files will be copied into: \n"
   "\t$HOME/.config/newprogram. You will be requested to edit "
-  "'paths.cfg' to\n\tprovide the pathname of your programs dir, and "
+  "'prdata.cfg' to\n\tprovide the pathname of your programs dir, and "
   " 2 subdirs, one for\n\tboilerplate code to be copied into the "
   "new project dir, and the other\n\tfor your library source code "
   "which will be hard linked into your\n\tproject dir.\n"

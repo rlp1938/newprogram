@@ -38,6 +38,11 @@
 #include <errno.h>
 
 #include "str.h"
+void
+touch(const char*);
+
+void
+str2file(const char *, const char *);
 
 mdata
 *readfile(const char *, int, size_t);
@@ -68,5 +73,8 @@ copyfile(const char *pathfro, const char *pathto);
 
 void
 dolink(const char *, const char *);
+
+void
+xsystem(const char *, int);
 
 #endif

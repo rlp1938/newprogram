@@ -19,6 +19,26 @@
 */
 
 #include "files.h"
+void
+touch(const char *fn)
+{/* Emulates the simplest use of the shell touch command. */
+	FILE *fp = dofopen(fn, "a");	// avoid zeroing an existing file.
+	dofclose(fp);
+} // touch()
+
+void
+str2file(const char *fn, const char *s)
+{/* Writes the C string s to file fn. The terminating '\0' of s will be
+  * replaced by '\n'.
+*/
+	size_t len = strlen(s);
+	char *buf = xmalloc(len + 1);
+	strcpy(buf, s);
+	buf[len-1] = '\n';
+	writefile(fn, buf, buf+len, "w");
+	free(buf);
+} // str2file()
+
 FILE
 *dofopen(const char *fn, const char *fmode)
 {	/* fopen() with error handling. */
@@ -163,3 +183,19 @@ dolink(const char *fr, const char *to)
 		exit(EXIT_FAILURE);
 	}
 } // dolink()
+
+void
+xsystem(const char *cmd, int fatal)
+{
+	const int status = system(cmd);
+
+    if (status == -1) {
+        fprintf(stderr, "system failed to execute: %s\n", cmd);
+        exit(EXIT_FAILURE);
+    }
+
+    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+        fprintf(stderr, "%s failed with non-zero exit\n", cmd);
+        if (fatal) exit(EXIT_FAILURE);
+    } // unsure what some stuff that issues warning returns
+} // xsystem()

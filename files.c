@@ -34,8 +34,8 @@ str2file(const char *fn, const char *s)
 	size_t len = strlen(s);
 	char *buf = xmalloc(len + 1);
 	strcpy(buf, s);
-	buf[len-1] = '\n';
-	writefile(fn, buf, buf+len, "w");
+	buf[len] = '\n';
+	writefile(fn, buf, buf+len+1, "w");
 	free(buf);
 } // str2file()
 

@@ -77,6 +77,7 @@ static void lotarget(oplist_t *);
 static void optarget(oplist_t *);
 static void hltarget(oplist_t *);
 static void sytarget(void);
+static void addautotools(progid *);
 
 char *gprname;	// set early in the piece and used near the end.
 
@@ -123,7 +124,6 @@ int main(int argc, char **argv)
 	if (opt.hasopts) {	// add gopt.h and gopt.c to Makefile.am
 		updmakefile_am(pi->exe, " gopt.c gopt.h");
 	}
-
 	// add extra-dist to Makefile.am if optioned.
 	if (opt.extra_data) {
 		extramakefile_am(opt.extra_data);
@@ -131,6 +131,8 @@ int main(int argc, char **argv)
 	}
 	// generate C program regardless
 	gensrcfiles(pi, opt.options_list, opt.hasopts);
+	// Generate the autotools
+	addautotools(pi);
 	vfree(compdir, stubdir, NULL);
 	free(extras);
 	destroyprogid(pi);
@@ -596,3 +598,46 @@ sytarget(void)
 		);
 	strjoin(bufsy, 0, line, PATH_MAX);
 } // sytarget()
+
+void
+addautotools(progid *pi)
+{/* adds files needed by autotools, runs programs and amends files
+  * as required. NB `automake --add-missing --copy` no longer makes
+  * copies of some files required by a GNU standard build so I create
+  * them here.
+  */
+	// Create files required.
+	char joinbuf[NAME_MAX];
+	char *author = cfgpath("newprogram", "prdata.cfg", "author");
+	char *email = cfgpath("newprogram", "prdata.cfg", "email");
+	sprintf(joinbuf, "README for %s", pi->exe);
+	str2file("README", joinbuf);
+	sprintf(joinbuf, "NOTES for %s", pi->exe);
+	str2file("NOTES", joinbuf);
+	sprintf(joinbuf, "ChangeLog for %s", pi->exe);
+	str2file("ChangeLog", joinbuf);
+	sprintf(joinbuf, "NEWS for %s", pi->exe);
+	str2file("NEWS", joinbuf);
+	sprintf(joinbuf, "Author for %s", pi->exe);
+	strjoin(joinbuf, '\n', author, NAME_MAX);
+	strjoin(joinbuf, ' ', email, NAME_MAX);
+	str2file("AUTHORS", joinbuf);
+	// run the autotools stuff
+	xsystem("autoscan", 1);
+	mdata *cfd = readfile("configure.scan", 1, 128);
+	memreplace(cfd, "FULL-PACKAGE-NAME", pi->exe, 128);
+	memreplace(cfd, "VERSION", "1.0", 128);	// Hard wired? OK I think.
+	memreplace(cfd, "BUG-REPORT-ADDRESS", email, 128);
+	// Lazy way to stop infinite loop.
+	memreplace(cfd, "AC_CONFIG_SRCDIR",
+						"AM_INIT_AUTOMAKE\nac_config_srcdir", 128);
+	// Original value of search target restored.
+	memreplace(cfd, "ac_config_srcdir", "AC_CONFIG_SRCDIR", 128);
+	writefile("configure.ac", cfd->fro, cfd->to, "w");
+	xsystem("autoheader", 1);
+	xsystem("aclocal", 1);
+	xsystem("automake --add-missing --copy", 1);
+	xsystem("autoconf", 1);
+	touch(pi->man);
+	vfree(email, author, NULL);
+} // addautotools()

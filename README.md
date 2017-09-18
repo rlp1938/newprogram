@@ -38,6 +38,7 @@ will be created also. By default *--help* option is provided
 automatically.
 
 5. The *--options-list* options in this example:
+
     a. *nno-optarg* - the beginning **n** is the short option name, the
     next word **no-optarg** is the long option name and the absence
     of any **:** suffix means that there is no options argument.
@@ -61,6 +62,7 @@ automatically.
 separated list of software names. The names in this example all have
 'c+h' on the end. In processing eg _dirs.c+h_ will be expanded to
 _dirs.c_ and _dirs.h_.
+
     a. This expanded software list will be entered as dependency names
     in the completed _Makefile.am_.
 

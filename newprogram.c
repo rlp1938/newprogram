@@ -84,9 +84,9 @@ char *gprname;	// set early in the piece and used near the end.
 int main(int argc, char **argv)
 {	/* newprogram - write the initial files for a new C program. */
 	if (!checkfirstrun("newprogram", "am.mak", "prdata.cfg",
-						"goptC", "goptH", "mainC", NULL)) {
+					"goptC", "goptH", "mainC", "manpage.md", NULL)) {
 		firstrun("newprogram", "am.mak", "prdata.cfg",
-						"goptC", "goptH", "mainC", NULL);
+						"goptC", "goptH", "mainC", "manpage.md", NULL);
 		fprintf(stderr,
 					"Please edit prdata.cfg in %s.config/newprogram"
 					" to meet your needs.\n",

@@ -9,6 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_MAKE_SET
 
 # Checks for libraries.
 
@@ -22,7 +23,7 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memchr memmove memset mkdir strchr strdup])
+AC_CHECK_FUNCS([memchr memmove memset mkdir strchr strdup strstr])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

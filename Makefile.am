@@ -13,7 +13,7 @@ man_MANS=newprogram.1
 # next lines to be hand edited
 # send <whatever> to $(prefix)/share/
 newdir=$(datadir)/newprogram
-new_DATA=
+new_DATA=am.mak prdata.cfg goptC goptH mainC manpage.md
 # ensure that newprogram.1 and any other config files get put in the tarball.
 # also stops `make distcheck` bringing an error.
-EXTRA_DIST=newprogram.1
+EXTRA_DIST=newprogram.1 am.mak prdata.cfg goptC goptH mainC manpage.md

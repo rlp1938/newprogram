@@ -499,7 +499,7 @@ updategoptHfile(const char *fn, oplist_t **ol)
 				tmp->shoptname[0], tmp->shoptname[0], tmp->longoptname);
 		strjoin(joinbuf, 0, line, PATH_MAX);
 	}
-	memreplace(md, "/* header target */", joinbuf, 1024);
+	memreplace(md, "/* header target */", joinbuf, 256);
 	writefile(fn, md->fro, md->to, "w");
 	free(md->fro);
 } // updategoptHfile()

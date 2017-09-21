@@ -32,19 +32,41 @@ meminsert(const char *line, mdata *dd, size_t meminc)
 	dd->to += len+1;
 } // meminsert()
 
+/* There's a bug in memreplace(). It manifests as dofopen() segfaulting
+ * when run immediately after a run of memreplace(). dofopen() should
+ * never segfault, it can and should abort when there is some problem
+ * with the file it's trying to open. So I am clobbering some memory, I
+ * suppose with some kind of write beyond my malloc'd space.
+ *
+ * The problem happens when available space is == space needed or
+ * available space is 1 more than space needed.
+ * If available space is 1 less than needed, a resize is forced and all
+ * is well. If available space is 2 more than needed it works as well.
+ *
+ * If I am off by 1 somewhere I can't see where. Is memmove() doing
+ * something it shouldn't oughta?
+ *
+ * Workaround - I'll put an 8 byte fudge fence into the thing.
+ * */
 void
 memreplace(mdata *md, char *find, char *repl, off_t meminc)
 {/* Replace find with repl for every occurrence in the data block md. */
 	size_t flen = strlen(find);
 	size_t rlen = strlen(repl);
 	off_t ldiff = rlen - flen;
+	const off_t fudge_fence = 8;	// see bug commentary above.
 	char *fp = md->fro;
 	fp = memmem(fp, md->to - fp, find, flen);
 	while (fp) {
 		off_t avail = md->limit - md->to;
-		if (ldiff > avail) {
-			size_t fpoffset = fp - md->fro;	// in case of relocation
-			memresize(md, meminc);
+		if (ldiff + fudge_fence > avail) {
+			off_t fpoffset = fp - md->fro;	// Handle relocation.
+			// Ensure that the resized memory has space to fit new data.
+			off_t actualinc = (meminc > ldiff)
+								? meminc : ldiff + fudge_fence;
+			/* Ensure that we never have available space within 0 or 1
+			 * bytes of the needed space. */
+			memresize(md, actualinc);
 			fp = md->fro + fpoffset;
 		}
 		char *movefro = fp + flen;

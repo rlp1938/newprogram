@@ -17,6 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
 */
+
+/* The purpose of dirs.[h|c] is to provide a set of utility functions
+ * for manipulating directories. For other file system objects see
+ * files.[h|c].
+ * */
+
 #ifndef _DIRS_H
 #define _DIRS_H
 #define _GNU_SOURCE 1
@@ -38,39 +44,29 @@
 #include "str.h"
 #include "files.h"
 
-unsigned char fsoselect[9];
-int meminc;
-char **except;
+typedef struct rd_data {
+	char **rejectlist;
+	size_t meminc;
+	unsigned char fsobj[9];
+} rd_data;
+
+rd_data
+*init_recursedir(char **excludes, size_t meminc, ...);
+
+void
+free_recursedir(rd_data *rd, mdata *md);
 
 DIR
-*dopendir(const char *);
+*dopendir(const char *dirname);
 
 void
-doclosedir(DIR *);
+doclosedir(DIR *dp);
 
 int
-recursedir(char *, mdata *);
+recursedir(char *dirname, mdata *ddat, rd_data *rd);
 
 void
-init_recursedir(mdata *, char **, ...);
-
-int
-inlist(const char *, char **);
-
-int
-inarray(const unsigned char, unsigned char *);
-
-char
-*join(const char *, const char *);
-
-void
-initmdat(mdata *);
-
-void
-initfsoslect(unsigned char[]);
-
-void
-newdir(const char *, int);
+newdir(const char *dname, int mayexist);
 
 void
 xchdir(const char *);

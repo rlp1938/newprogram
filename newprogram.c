@@ -295,7 +295,7 @@ char
 	mdata *md = getconfigfile(cfgdir, cfgfname);
 	char *cp = getcfgdata(md, cfgid);
 	char *ret = xstrdup(cp);
-	freemdata(md);
+	free_mdata(md);
 	return ret;
 } // cfgpath()
 
@@ -452,7 +452,7 @@ oplist_t **words2ol(char *listofopts)
 		ol[index] = tmp;
 		index++;
 	} // while()
-	destroystrarray(wordlist);	// no longer needed;
+	destroystrarray(wordlist, 0);	// no longer needed;
 	return ol;
 } // words2ol()
 

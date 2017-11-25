@@ -17,6 +17,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
 */
+
+/* The purpose of str.[h|c] is to provide some utility functions for
+ * manipulating memory. Consequently many of the functions will simply
+ * be wrappers around the C library functions str*() and mem*().
+ * */
 #ifndef _STR_H
 #define _STR_H
 #define _GNU_SOURCE 1
@@ -42,46 +47,67 @@ typedef struct mdata {
 	char *limit;
 } mdata;
 
-void
-*xmalloc(size_t);
-
-void
-meminsert(const char *, mdata *, size_t);
-
-void
-memreplace(mdata *, char *, char *, off_t);
-
-void
-memresize(mdata *, off_t);
+size_t
+lenrequired(size_t nominal_len);
 
 size_t
-memlinestostr(mdata *);
+countmemstr(mdata *md);
+
+char
+*mktmpfn(char *prname, char *extrafn, char *thename);
+
+mdata
+*init_mdata(void);
+
+void
+free_mdata(mdata *);
+
+void
+*xmalloc(size_t n);
+
+void
+meminsert(const char *line, mdata *md, size_t meminc);
+
+void
+memreplace(mdata *md, char *find , char *repl, off_t meminc);
+
+void
+memresize(mdata *md, off_t meminc);
 
 size_t
-memstrtolines(mdata *);
+memlinestostr(mdata *md);
+
+size_t
+memstrtolines(mdata *md);
 
 void
-strjoin(char *, char, char *, size_t);
+strjoin(char *buf, char sep, char *tojoin, size_t bufsize);
 
 char
-*xstrdup(char *);
+*xstrdup(char *s);
 
 char
-*getcfgdata(mdata *, char *);
-
-void
-freemdata(mdata *);
+*getcfgdata(mdata *md, char *configid);
 
 void
 vfree(void *, ...);
 
 char
-**list2array(char *, char);
+**list2array(char *items, char sep);
 
 void
-trimspace(char *);
+trimspace(char *buf);
 
 void
-destroystrarray(char **);
+destroystrarray(char **str_array, size_t count);
+
+char
+*cfg_pathtofile(const char *prn, const char *fn);
+
+int
+inlist(const char *find, char **list);
+
+int
+in_uch_array(const unsigned char, unsigned char *);
 
 #endif

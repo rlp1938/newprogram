@@ -18,7 +18,60 @@
  * MA 02110-1301, USA.
 */
 
+/* The purpose of files.[h|c] is to provide utility functions for
+ * manipulating file system objects other than directories. For the
+ * latter see dirs.[h|c].
+ * */
+
 #include "files.h"
+
+int
+xsystem(const char *cmd, int fatal)
+{ /* Runs system() and processes the results.
+   * If fatal is non zero all non zero results from the child will be
+   * fatal but there can be circumstances where the result is needed by
+   * the caller.
+*/
+	const int status = system(cmd);
+	if (status == -1) {	// this always fatal
+		fprintf(stderr, "system failed to execute: %s\n", cmd);
+		exit(EXIT_FAILURE);
+	}
+	int res;
+	if (WIFEXITED(status)) {	// Child has terminated
+		res = WEXITSTATUS(status);
+		if (fatal && res) {
+			fprintf(stderr, "Command \"%s\" returned non-zero result:"
+						" %d\n" ,cmd, res);
+			exit(EXIT_FAILURE);
+		}
+	}
+	return res;
+} // xsystem()
+
+void
+dumpstrblock(const char *tmpfn, mdata *md)
+{ /* Dumps the block of C strings named by md to the file named by
+   * tmpfn. The block will be altered to a block of lines terminated by
+   * '\n', then written to tmpfn and restored to C strings before
+   * returning. Tmpfn may be "-" to write to stdout.
+*/
+	memstrtolines(md);
+	writefile(tmpfn, md->fro, md->to, "w");
+	memlinestostr(md);
+} // dumpstrblock()
+
+ino_t
+getinode(char *path)
+{	/* return the inode number if the path exists, if not abort */
+	struct stat sb;
+	if (lstat(path, &sb) == -1) {
+		perror(path);
+		exit(EXIT_FAILURE);
+	}
+	return sb.st_ino;
+} // getinode()
+
 void
 touch(const char *fn)
 {/* Emulates the simplest use of the shell touch command. */
@@ -68,16 +121,21 @@ writefile(const char *filename, char *fro, char *to, const char *fmode)
 	off_t len = to - fro;
 	if (len <= 0) return;
 	FILE *fpo;
-	if (strcmp("-", filename) == 0) fpo = stdout;
+	int closeit = 1;
+	if (strcmp("-", filename) == 0) {
+		fpo = stdout;
+		closeit = 0;
+	}
 	else fpo = dofopen(filename, fmode);
 	size_t written = fwrite(fro, 1, (size_t)len, fpo);
 	if (written != (size_t)len) {
+		perror("writefile");
 		fprintf(stderr,
 				"Expected to write: %ld bytes, but wrote %lu bytes.\n",
 				len, written);
 		exit(EXIT_FAILURE);
 	}
-	dofclose(fpo);
+	if (closeit) dofclose(fpo);
 } // writefile()
 
 void
@@ -184,18 +242,28 @@ dolink(const char *fr, const char *to)
 	}
 } // dolink()
 
-void
-xsystem(const char *cmd, int fatal)
-{
-	const int status = system(cmd);
-
-    if (status == -1) {
-        fprintf(stderr, "system failed to execute: %s\n", cmd);
-        exit(EXIT_FAILURE);
-    }
-
-    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-        fprintf(stderr, "%s failed with non-zero exit\n", cmd);
-        if (fatal) exit(EXIT_FAILURE);
-    } // unsure what some stuff that issues warning returns
-} // xsystem()
+char
+*cfg_getparameter(const char *prn, const char *fn, const char *param)
+{ /* Return the string that param points to. */
+	char *pp = cfg_pathtofile(prn, fn);
+	mdata *md = readfile(pp, 1, 0);
+	free(pp);
+	memlinestostr(md);
+	char *p = memmem(md->fro, md->to - md->fro, param, strlen(param));
+	if (!p) {
+		fprintf(stderr, "No such parameter: %s\n", param);
+		free_mdata(md);
+		exit(EXIT_FAILURE);
+	}
+	char *eq = strchr(p, '=');
+	if (!eq) {
+		fprintf(stderr, "Malformed parameter line: %s\n", p);
+		free_mdata(md);
+		exit(EXIT_FAILURE);
+	}
+	eq++;	// get past '='
+	trimspace(eq);
+	char *ret = xstrdup(eq);
+	free_mdata(md);
+	return ret;
+} // cfg_getparameter()

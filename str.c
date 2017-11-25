@@ -17,16 +17,72 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
 */
+
+/* The purpose of str.[h|c] is to provide some utility functions for
+ * manipulating memory. Consequently many of the functions will simply
+ * be wrappers around the C library functions str*() and mem*().
+ * */
+
 #include "str.h"
+
+size_t
+lenrequired(size_t nominal_len)
+{ /* Ensure that memory operations always have 8 bytes to spare. */
+	const size_t fudgefence = 8;
+	return nominal_len + fudgefence;
+} // lenrequired()
+
+size_t
+countmemstr(mdata *md)
+{ /* In memory block specified by md, count the number of C strings. */
+	char *cp = md->fro;
+	size_t c = 0;
+	while (cp < md->to) {
+		if (*cp == 0) c++;
+		cp++;
+	}
+	return c;
+} // countmemlines()
+
+char
+*mktmpfn(char *prname, char *extrafn, char *thename)
+{/* Make a temporary file name.
+  * The name will be the concatenation of: "/tmp/", prname, $USER, pid
+  * and extrafn. Extrafn may be NULL if the application needs only one
+  * filename. If thename is NULL a buffer of PATH_MAX will be created
+  * and the returned result must be freed after use, otherwise thename
+  * should be a buffer of PATH_MAX size allocated by the caller.
+*/
+	char *buf;
+	if (thename) {
+		buf = thename;
+	} else {
+		buf = xmalloc(PATH_MAX);
+	}
+	sprintf(buf, "/tmp/%s%s%d%s.lst", prname, getenv("USER"), getpid(),
+				extrafn);
+	return buf;
+} // mktmpfn()
+
+mdata
+*init_mdata(void)
+{
+	mdata *md = xmalloc(sizeof(mdata));
+	md->fro = md->to = md->limit = (char *)NULL;
+	return md;
+} // init_mdata()
 
 void
 meminsert(const char *line, mdata *dd, size_t meminc)
 {	/* insert line into the data block described by dd, taking care of
 	 * necessary memory reallocation as needed.
 	*/
-	int len = strlen(line);
-	if (len > dd->limit - dd->to) {
-		memresize(dd, meminc);
+	size_t len = strlen(line);
+	size_t safelen = lenrequired(len);
+	if (safelen > (unsigned)(dd->limit - dd->to)) { // >= 0 always
+		/* Ensure that line always has room to fit. */
+		size_t needed = (meminc > safelen) ? meminc : safelen;
+		memresize(dd, needed);
 	}
 	strcpy(dd->to, line);
 	dd->to += len+1;
@@ -145,6 +201,7 @@ strjoin(char *left, char sep, char *right, size_t max)
 	* an error message.
 */
 	size_t llen = strlen(left);
+	if (!right) return;
 	size_t rlen = strlen(right);
 	size_t tlen = llen + rlen + 1;	// ignore sep == 0
 	if ( tlen >= max) {
@@ -219,7 +276,7 @@ char
 } // getgfgdata()
 
 void
-freemdata(mdata *md)
+free_mdata(mdata *md)
 {/* Free the data pointed to by md, then free md itself. */
 	free(md->fro);
 	free(md);
@@ -306,13 +363,49 @@ trimspace(char *buf)
 } // trimws()
 
 void
-destroystrarray(char **wordlist)
-{/* Frees NULL terminated list of strings. */
+destroystrarray(char **wordlist, size_t count)
+{/* Frees list of strings. If count is non-zero, frees count strings,
+  * otherwise it assumes wordlist has a NULL terminator.
+*/
 	size_t i = 0;
-	while (wordlist[i]) {
-		free(wordlist[i]);
-		i++;
+	if (count) {
+		for (i = 0; i < count; i++) free(wordlist[count]);
+	} else {
+		while (wordlist[i]) {
+			free(wordlist[i]);
+			i++;
+		}
 	}
 	free(wordlist);
 } // destroystrarray()
 
+char
+*cfg_pathtofile(const char *prn, const char *fn)
+{/* return path to a named config file. */
+	char buf[PATH_MAX];
+	sprintf(buf, "%s/.config/%s/%s", getenv("HOME"), prn, fn);
+	return xstrdup(buf);
+} // cfg_pathtofile()
+
+int
+inlist(const char *name, char **list)
+{	/* return 1 if name is found in list, 0 otherwise. */
+	if (!list) return 0;	// list may not have been made.
+	int i = 0;
+	while (list[i]) {
+		if(strcmp(name, list[i]) == 0) return 1;
+		i++;
+	}
+	return 0;
+} // inlist()
+
+int
+in_uch_array(const unsigned char c, unsigned char *buf)
+{ /* Return 1 if c is in buf, 0 otherwise. Buf must be 0 terminated. */
+	unsigned char *cp = buf;
+	while (*cp != 0) {
+		if(*cp == c) return 1;
+		cp++;
+	}
+	return 0;
+} // in_uch_array()

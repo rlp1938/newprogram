@@ -17,6 +17,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
 */
+
+/* The purpose of files.[h|c] is to provide utility functions for
+ * manipulating file system objects other than directories. For the
+ * latter see dirs.[h|c].
+ * */
 #ifndef _FILES_H
 #define _FILES_H
 
@@ -24,6 +29,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,43 +44,53 @@
 #include <errno.h>
 
 #include "str.h"
-void
-touch(const char*);
+
+int
+xsystem(const char *command, int fatal);
 
 void
-str2file(const char *, const char *);
+dumpstrblock(const char *tmpfn, mdata *md);
+
+ino_t
+getinode(char *path);
+
+void
+touch(const char* fn);
+
+void
+str2file(const char *fn, const char *s);
 
 mdata
-*readfile(const char *, int, size_t);
+*readfile(const char *fn, int fatal, size_t extra);
 
 FILE
-*dofopen(const char *, const char *);
+*dofopen(const char *fn, const char *opnmode);
 
 void
-dofclose(FILE *);
+dofclose(FILE *fp);
 
 void
-writefile(const char *, char *, char *, const char *);
+writefile(const char *fn, char *fro, char *to, const char *opnmode);
 
 void
-strblocktolines(char *, char *);
+strblocktolines(char *fro, char *to);
 
 int
 exists_file(const char *);
 
 off_t
-getfsize(const char *);
+getfsize(const char *fn);
 
 mdata
-*getconfigfile(char *, char *);
+*getconfigfile(char *progname, char *cfgfn);
 
 void
 copyfile(const char *pathfro, const char *pathto);
 
 void
-dolink(const char *, const char *);
+dolink(const char *fro, const char *to);
 
-void
-xsystem(const char *, int);
+char
+*cfg_getparameter(const char *prn, const char *fn, const char *param);
 
 #endif

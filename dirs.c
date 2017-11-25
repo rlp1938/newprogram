@@ -18,11 +18,16 @@
  * MA 02110-1301, USA.
 */
 
+/* The purpose of dirs.[h|c] is to provide a set of utility functions
+ * for manipulating directories. For other file system objects see
+ * files.[h|c].
+ * */
+
 #include "dirs.h"
 
 DIR
 *dopendir(const char *name)
-{	/* open a dir with error handling */
+{ /* open a dir with error handling */
 	DIR *dir = opendir(name);
 	if (!dir) {
 		perror(name);
@@ -32,123 +37,87 @@ DIR
 } // dopendir()
 
 int
-recursedir(char *dirname, mdata *ddat)
-{	/* Returns count of records recorded.
-	* Caller must initialise fsoselect and meminc
-	* before calling this function.
+recursedir(char *dirname, mdata *ddat, rd_data *rd)
+{ /* Returns count of records recorded.
+	* Caller must init_recursedir() before calling this.
 	*/
-	size_t meminc = 1048576;	// 1 meg seem reasonable.
-
 	DIR *dp = dopendir(dirname);
 	static int recs = 0;
 	struct dirent *de;
 	while ((de = readdir(dp))) {
 		if (strcmp(de->d_name, ".") == 0 ) continue;
 		if (strcmp(de->d_name, "..") == 0) continue;
-		if (de->d_type == DT_DIR) {
-			if(inlist(de->d_name, except)) continue;
+		// Process only file system objects named in rd->fsobj[]
+		if (!in_uch_array(de->d_type, rd->fsobj)) continue;
+		char joinbuf[PATH_MAX];
+		strcpy(joinbuf, dirname);
+		strjoin(joinbuf, '/', de->d_name, PATH_MAX);
+		/* If there is list of paths to reject check that any dirs
+		 * found are not in rd->rejectlist[] */
+		if ((rd->rejectlist) && de->d_type == DT_DIR) {
+			if(inlist(joinbuf, rd->rejectlist)) continue;
 		}
-		//fprintf(stderr, "(b4)dirname %s\n", dirname);
-		if (!(inarray(de->d_type, fsoselect))) continue;
-		//fprintf(stderr, "(inarray)dirname %s\n", dirname);
-		char *fsoname = join(dirname, de->d_name);
-		//fprintf(stderr, "(after join)dirname %s\n", dirname);
-		meminsert(fsoname, ddat, meminc);
-		/*fprintf(stderr, "dirname %s\nd_name %s d_type %d\n"
-						"fsoname %s\n\n",
-						dirname, de->d_name, de->d_type, fsoname);
-		int ans = getc(stdin); */
+		meminsert(joinbuf, ddat, rd->meminc);
 		recs++;
 		if (de->d_type == DT_DIR) {
-			recursedir(fsoname, ddat);
-			free(fsoname);
-		} else free(fsoname);
+			recursedir(joinbuf, ddat, rd);
+		}
 	} // while()
 	doclosedir(dp);
 	return recs;
 } // recursedir()
 
 /*
- * for fstyp below use DT_BLK, DT_CHR, DT_DIR, DT_FIFO, DT_LNK, DT_REG,
- * DT_SOCK, DT_UNKNOWN as required. Most needs will be met by DT_DIR,
- * DT_LNK, and DT_REG. DT_DIR will always be needed otherwise the
- * recursion can never happen.
- * excludes may be NULL and if it is there will be no dirs excluded from
+ * For fsobj below use DT_BLK, DT_CHR, DT_DIR, DT_FIFO, DT_LNK, DT_REG,
+ * DT_SOCK, DT_UNKNOWN as required.
+ * Most needs will be met by DT_DIR and DT_REG.
+ * DT_DIR will always be needed else the recursion can never happen.
+ * Excludes may be NULL and if it is there will be no dirs excluded from
  * the output.
  * */
-void
-init_recursedir(mdata *dd, char **excludes, .../* last varg MUST be
-												0xff, terminator */)
-{	/* prepare to use recursedir() */
-	initmdat(dd);
-	meminc = 1024 * 1024;	// 1 meg seems reasonable
-	except = excludes;
-	initfsoslect(fsoselect);
-	va_list ap;
-	va_start(ap, excludes);
+
+rd_data
+*init_recursedir(char **excludes, size_t meminc, ...)
+/* vargs are list of fsobj, must terminate with 0 */
+{ /* prepare to use recursedir() */
+	rd_data *rd = xmalloc(sizeof(rd_data));
+	memset(rd, 0, sizeof(rd_data));
+	rd->meminc = meminc;
+	if (excludes) {	// excludes may be NULL
+		size_t i, n;
+		for (i = 0; excludes[i] ; i++);
+		n = i + 1;
+		rd->rejectlist = xmalloc(n * sizeof(char *));
+		memset(rd->rejectlist, 0, n * sizeof(char *));
+		for (i = 0; i < n; i++)
+			rd->rejectlist[i] = realpath(excludes[i], NULL);
+	} // if()
 	int i = 0;
+	va_list ap;
+	va_start(ap, meminc);
+	unsigned char ch;
 	while (1) {
-		unsigned char res = va_arg(ap, int);
-		if (res == 0xff) break;
-		fsoselect[i] = res;
+		ch = va_arg(ap, unsigned);
+		rd->fsobj[i] = ch;
 		i++;
+		if (ch == 0) break;
 	}
 	va_end(ap);
+	return rd;
 } // init_recursedir()
 
-int
-inlist(const char *name, char **list)
-{	/* return 1 if name is found in list, 0 otherwise. */
-	if (!list) return 0;	// list may not have been made.
-
-	int i = 0;
-	while (list[i]) {
-		if(strcmp(name, list[i]) == 0) return 1;
-		i++;
-	}
-	return 0;
-} // inlist()
-
-char
-*join(const char *dirname, const char *newname)
-{	/* Concatenate dirname and newname inserting '/' between. */
-	char buf[PATH_MAX];
-	size_t len = strlen(dirname);
-	strcpy(buf, dirname);
-	char *eol = buf + len;
-	if(*eol != '/') {
-		*eol = '/';
-		eol++;
-	}
-	strcpy(eol, newname);
-	return strdup(buf);
-} // join()
-
-int
-inarray(const unsigned char c, unsigned char *buf)
-{	/* Return 1 if c is in buf, 0 otherwise */
-	unsigned char *cp = buf;
-	while (*cp != 0xff) {
-		if(*cp == c) return 1;
-		cp++;
-	}
-	return 0;
-} // inarray()
-
 void
-initmdat(mdata *dd)
-{	/* 0/NULL elements of dd */
-	dd->fro = dd->to = dd->limit = (char *)NULL;
-} // initmdat()
-
-void
-initfsoslect(unsigned char fsoselect[])
-{	/* set all element of fsoselect to 0xff */
-	int i;
-	for (i = 0; i < 9; i++) {
-		fsoselect[i] = 0xff;
+free_recursedir(rd_data *rd, mdata *md)
+{ /* free resources allocated by init_recursedir() */
+	if (rd->rejectlist) {
+		int i;
+		for (i = 0; rd->rejectlist[i]; i++) free(rd->rejectlist[i]);
+		free(rd->rejectlist);
 	}
-} // initfsoslect()
+	free(rd);
+	free(md->fro);
+	free(md);
+} // free_recursedir()
 
 void
 doclosedir(DIR *dp)

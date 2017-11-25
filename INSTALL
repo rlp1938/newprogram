@@ -13,7 +13,9 @@ Basic Installation
 ==================
 
    Briefly, the shell command `./configure && make && make install'
-should configure, build, and install this package.  The following
+should configure, build, and install this package. 
+You might need to run 'autoconf' before the line above. 
+ The following
 more-detailed instructions are generic; see the `README' file for
 instructions specific to this package.  Some packages provide this
 `INSTALL' file but do not implement all of the features documented

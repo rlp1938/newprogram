@@ -78,6 +78,7 @@ static void optarget(oplist_t *);
 static void hltarget(oplist_t *);
 static void sytarget(void);
 static void addautotools(progid *);
+static void tweakmain(progid *pi);
 
 char *gprname;	// set early in the piece and used near the end.
 
@@ -131,6 +132,7 @@ int main(int argc, char **argv)
 	}
 	// generate C program regardless
 	gensrcfiles(pi, opt.options_list, opt.hasopts);
+	tweakmain(pi);
 	// Generate the autotools
 	addautotools(pi);
 	vfree(compdir, stubdir, NULL);
@@ -641,3 +643,12 @@ addautotools(progid *pi)
 	touch(pi->man);
 	vfree(email, author, NULL);
 } // addautotools()
+
+void tweakmain(progid *pi)
+{	/* Must be in the dir where the program resides. */
+	mdata *md = readfile(pi->src, 1, PATH_MAX);
+	memreplace(md, "mainC", pi->src, PATH_MAX);
+	// TODO - fixup copyright in the target main program
+	writefile(pi->src, md->fro, md->to, "w");
+	free_mdata(md);
+}

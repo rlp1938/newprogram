@@ -34,6 +34,7 @@
 #include <libgen.h>
 #include <errno.h>
 // typdefs/structs here.
+#include "str.h"
 #include "dirs.h"
 #include "files.h"
 #include "gopt.h"

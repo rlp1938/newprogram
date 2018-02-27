@@ -51,7 +51,8 @@ typedef struct rd_data {
 } rd_data;
 
 rd_data
-*init_recursedir(char **excludes, size_t meminc, ...);
+*init_recursedir(char **excludes, size_t meminc,/*d_type*/ ...);
+/* vargs are list of d_type, must terminate with 0 */
 
 void
 free_recursedir(rd_data *rd, mdata *md);

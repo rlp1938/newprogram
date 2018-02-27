@@ -24,6 +24,50 @@
  * */
 
 #include "str.h"
+char
+*getcfgfn(const char *prg, const char *fn)
+{/* assemble a config file name from the given parameters */
+	char buf[PATH_MAX];
+	sprintf(buf, "%s/.config/%s/%s", getenv("HOME"), prg, fn);
+	return xstrdup(buf);
+} // getcfgfn()
+
+char
+*get_home(void)
+{
+	char buf[PATH_MAX];
+	sprintf(buf, "%s", getenv("HOME"));
+	return xstrdup(buf);
+} // get_home()
+
+size_t
+home_len(void)
+{
+	char buf[PATH_MAX] = {0};
+	sprintf(buf, "%s", getenv("HOME"));
+	return strlen(buf);
+} // home_len()
+
+char
+**memblocktoarray(mdata *md, int islines)
+{/* Memory data, C strings or lines with '\n'.
+  * Make a char * array of them.
+  * To be NULL terminated.
+*/
+	size_t num;
+	if (islines) num = memlinestostr(md);	// '\n' terminated.
+	else num = countmemstr(md);				// '\0' terminated.
+	size_t rqd = (num + 1) * sizeof(char *);
+	char **result = xmalloc(rqd);
+	memset(result, 0, rqd);
+	char *cp = md->fro;
+	size_t i = 0;
+	while (cp < md->to) {
+		result[i++] = xstrdup(cp);
+		cp += strlen(cp) + 1;
+	}
+	return result;
+} // memblocktoarray()
 
 size_t
 lenrequired(size_t nominal_len)
@@ -104,6 +148,17 @@ meminsert(const char *line, mdata *dd, size_t meminc)
  *
  * Workaround - I'll put an 8 byte fudge fence into the thing.
  * */
+
+int
+printstrlist(char **list)
+{
+	int i;
+	for (i = 0; list[i]; i++) {
+		printf("%s\n", list[i]);
+	}
+	return i;
+} // printstrlist()
+
 void
 memreplace(mdata *md, char *find, char *repl, off_t meminc)
 {/* Replace find with repl for every occurrence in the data block md. */

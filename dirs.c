@@ -47,8 +47,6 @@ recursedir(char *dirname, mdata *ddat, rd_data *rd)
 	while ((de = readdir(dp))) {
 		if (strcmp(de->d_name, ".") == 0 ) continue;
 		if (strcmp(de->d_name, "..") == 0) continue;
-		// Process only file system objects named in rd->fsobj[]
-		if (!in_uch_array(de->d_type, rd->fsobj)) continue;
 		char joinbuf[PATH_MAX];
 		strcpy(joinbuf, dirname);
 		strjoin(joinbuf, '/', de->d_name, PATH_MAX);
@@ -57,8 +55,11 @@ recursedir(char *dirname, mdata *ddat, rd_data *rd)
 		if ((rd->rejectlist) && de->d_type == DT_DIR) {
 			if(inlist(joinbuf, rd->rejectlist)) continue;
 		}
-		meminsert(joinbuf, ddat, rd->meminc);
-		recs++;
+		// Output only file system objects named in rd->fsobj[]
+		if (in_uch_array(de->d_type, rd->fsobj)) {
+			meminsert(joinbuf, ddat, rd->meminc);
+			recs++;
+		}
 		if (de->d_type == DT_DIR) {
 			recursedir(joinbuf, ddat, rd);
 		}
@@ -77,20 +78,23 @@ recursedir(char *dirname, mdata *ddat, rd_data *rd)
  * */
 
 rd_data
-*init_recursedir(char **excludes, size_t meminc, ...)
+*init_recursedir(char **excludes, size_t meminc, /*d_type*/...)
 /* vargs are list of fsobj, must terminate with 0 */
 { /* prepare to use recursedir() */
 	rd_data *rd = xmalloc(sizeof(rd_data));
 	memset(rd, 0, sizeof(rd_data));
 	rd->meminc = meminc;
 	if (excludes) {	// excludes may be NULL
-		size_t i, n;
+		size_t i, j, n;
 		for (i = 0; excludes[i] ; i++);
 		n = i + 1;
 		rd->rejectlist = xmalloc(n * sizeof(char *));
 		memset(rd->rejectlist, 0, n * sizeof(char *));
-		for (i = 0; i < n; i++)
-			rd->rejectlist[i] = realpath(excludes[i], NULL);
+		for (i = 0, j = 0; i < n; i++) {
+			// deal with non-existence of realpath() some names.
+			char *cp = realpath(excludes[i], NULL);
+			if (cp) rd->rejectlist[j++] = cp;
+		} // for()
 	} // if()
 	int i = 0;
 	va_list ap;

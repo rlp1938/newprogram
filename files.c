@@ -25,6 +25,40 @@
 
 #include "files.h"
 
+void
+writestrarray(char **list)
+{ /* output the strings to console - must be NULL terminated. */
+	size_t i;
+	for (i = 0; list[i] ; i++)
+		printf("%s\n", list[i]);
+} // writestrarray()
+
+char
+**getfile_str(const char *path)
+{ /* Read file at path. File to have lines terminated with '\n'.
+   * Returns list of C strings with NULL terminated list.
+*/
+	mdata *md = readfile(path, 1, 0);
+	size_t n = memlinestostr(md);
+	if (!n)
+	{
+		fprintf(stderr, "File %s contains no line delimeters,\n", path);
+		exit(EXIT_FAILURE);
+	}
+	return memblocktoarray(md, 0);
+} // getfile_str()
+
+time_t
+getfile_mtime(const char *path)
+{/* get the modification time of a file if it exists.
+  * No interest in micro seconds for this purpose.
+*/
+	struct stat sb;
+	int res = lstat(path, &sb);
+	if (res == -1) return 0;	// 1970-01-01
+	return sb.st_atime;
+} // getfile_mtime()
+
 int
 xsystem(const char *cmd, int fatal)
 { /* Runs system() and processes the results.
@@ -37,13 +71,13 @@ xsystem(const char *cmd, int fatal)
 		fprintf(stderr, "system failed to execute: %s\n", cmd);
 		exit(EXIT_FAILURE);
 	}
-	int res;
+	int res = 0;
 	if (WIFEXITED(status)) {	// Child has terminated
 		res = WEXITSTATUS(status);
-		if (fatal && res) {
+		if (res) {
 			fprintf(stderr, "Command \"%s\" returned non-zero result:"
 						" %d\n" ,cmd, res);
-			exit(EXIT_FAILURE);
+			if (fatal) exit(EXIT_FAILURE);
 		}
 	}
 	return res;
@@ -157,9 +191,9 @@ mdata
 	 * exist, but will return NULL instead. All other errors are always
 	 * fatal. If extra is non-zero will provide extra space, init to 0.
 	*/
-	mdata  *ret = NULL;
+	mdata *ret = NULL;
 	if (exists_file(path)) {
-		ret = malloc(sizeof(mdata ));
+		ret = malloc(sizeof(mdata));
 		if (!ret) {
 			fputs("Out of memory.\n", stderr);
 			exit(EXIT_FAILURE);
@@ -188,7 +222,8 @@ mdata
 
 int
 exists_file(const char *path)
-{	/* returns 1 if I can stat the file, 0 otherwise */
+{	/* returns 1 if I can stat the object and it's a regular file,
+	*  0 otherwise */
 	struct stat sb;
 	int res = stat(path, &sb);
 	if (res == -1) {
@@ -230,6 +265,7 @@ copyfile(const char *pathfro, const char *pathto)
 {/* Does a file copy in user space. */
 	mdata *fd = readfile(pathfro, 1, 0);
 	writefile(pathto, fd->fro, fd->to, "w");
+	free_mdata(fd);
 } // copyfile()
 
 void

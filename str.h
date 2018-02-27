@@ -46,6 +46,20 @@ typedef struct mdata {
 	char *to;
 	char *limit;
 } mdata;
+char
+*getcfgfn(const char *prg, const char *fn);
+
+char
+*get_home(void);
+
+size_t
+home_len(void);
+
+int
+printstrlist(char **list);
+
+char
+**memblocktoarray(mdata *md, int islines);
 
 size_t
 lenrequired(size_t nominal_len);

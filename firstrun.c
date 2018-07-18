@@ -29,7 +29,7 @@ int checkfirstrun(char *progname, char **names)
 	for (i = 0; names[i]; i++) {
 		char buf[PATH_MAX];
 		strcpy(buf, upath);
-		strjoin(buf, '/', names[i]);
+		strjoin(buf, '/', names[i], PATH_MAX);
 		if(!exists_file(buf)) return 0;
 	}
 	return 1;
@@ -67,11 +67,11 @@ void firstrun(char *progname, char **names)
 	}
 } // firstrun()
 
-void rmconfigs(const char cfgdir)
+void rmconfigs(char *cfgdir)
 {/* This is run to ensure that there are no unused config files left. */
 	mdata *md = init_mdata();
 	rd_data *rd = init_recursedir(NULL, 2*PATH_MAX, DT_REG, 0);
-	int res = recursedir(cfgdir);
+	int res = recursedir(cfgdir, md, rd);
 	if (res) {
 		char *cp = md->fro;
 		while (cp < md->to) { // redundant testing

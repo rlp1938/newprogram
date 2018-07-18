@@ -31,6 +31,6 @@
 
 int checkfirstrun(char *progname, char **names);
 void firstrun(char *progname, char **names);
-void rmconfigs(const char cfgdir);
+void rmconfigs(char *cfgdir);
 
 #endif

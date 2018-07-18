@@ -22,7 +22,7 @@ project dir will be _Something_ and the main program _something.c_.
 The resulting binary will be _something_ and the manpage _something.1_.
 All required _autotools_ files will be generated and any optional
 software dependencies will be entered into the _Makefile.am_. Such
-dependenies, if found within the user designated source file sub-dir
+dependencies, if found within the user designated source file sub-dir
 will be hard linked into the project dir, or if found within the user
 designated boilerplate dir will be copied there for subsequent editing.
 

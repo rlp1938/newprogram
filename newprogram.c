@@ -84,10 +84,12 @@ char *gprname;	// set early in the piece and used near the end.
 
 int main(int argc, char **argv)
 {	/* newprogram - write the initial files for a new C program. */
-	if (!checkfirstrun("newprogram", "am.mak", "prdata.cfg",
-					"goptC", "goptH", "mainC", "manpage.md", NULL)) {
-		firstrun("newprogram", "am.mak", "prdata.cfg",
-						"goptC", "goptH", "mainC", "manpage.md", NULL);
+  char *names[7] = {
+    "am.mak", "prdata.cfg", "goptC", "goptH", "mainC", "manpage.md",
+    NULL
+  };
+	if (!checkfirstrun("newprogram", names)) {
+		firstrun("newprogram", names);
 		fprintf(stderr,
 					"Please edit prdata.cfg in %s.config/newprogram"
 					" to meet your needs.\n",
@@ -613,17 +615,17 @@ addautotools(progid *pi)
 	char *author = cfgpath("newprogram", "prdata.cfg", "author");
 	char *email = cfgpath("newprogram", "prdata.cfg", "email");
 	sprintf(joinbuf, "README for %s", pi->exe);
-	str2file("README", joinbuf);
+  str2file("README", joinbuf, "a");
 	sprintf(joinbuf, "NOTES for %s", pi->exe);
-	str2file("NOTES", joinbuf);
+	str2file("NOTES", joinbuf, "a");
 	sprintf(joinbuf, "ChangeLog for %s", pi->exe);
-	str2file("ChangeLog", joinbuf);
+	str2file("ChangeLog", joinbuf, "a");
 	sprintf(joinbuf, "NEWS for %s", pi->exe);
-	str2file("NEWS", joinbuf);
+	str2file("NEWS", joinbuf, "a");
 	sprintf(joinbuf, "Author for %s", pi->exe);
 	strjoin(joinbuf, '\n', author, NAME_MAX);
 	strjoin(joinbuf, ' ', email, NAME_MAX);
-	str2file("AUTHORS", joinbuf);
+	str2file("AUTHORS", joinbuf, "a");
 	// run the autotools stuff
 	xsystem("autoscan", 1);
 	mdata *cfd = readfile("configure.scan", 1, 128);

@@ -34,7 +34,5 @@ typedef struct options_t {
 
 void dohelp(int forced);
 options_t process_options(int argc, char **argv);
-char *thesynopsis(void);
-char *thehelp(void);
 
 #endif

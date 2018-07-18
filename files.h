@@ -60,13 +60,13 @@ void
 dumpstrblock(const char *tmpfn, mdata *md);
 
 ino_t
-getinode(char *path);
+getinode(const char *path);
 
 void
 touch(const char* fn);
 
 void
-str2file(const char *fn, const char *s);
+str2file(const char *fn, const char *s, const char *mode);
 
 mdata
 *readfile(const char *fn, int fatal, size_t extra);
@@ -99,6 +99,9 @@ void
 dolink(const char *fro, const char *to);
 
 char
-*cfg_getparameter(const char *prn, const char *fn, const char *param);
+*cfg_getparameter(char *prn, char *fn, const char *param);
+
+void
+dounlink(const char *p);
 
 #endif

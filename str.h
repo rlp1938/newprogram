@@ -46,20 +46,9 @@ typedef struct mdata {
 	char *to;
 	char *limit;
 } mdata;
-char
-*getcfgfn(const char *prg, const char *fn);
-
-char
-*get_home(void);
-
-size_t
-home_len(void);
 
 int
 printstrlist(char **list);
-
-char
-**memblocktoarray(mdata *md, int islines);
 
 size_t
 lenrequired(size_t nominal_len);
@@ -88,7 +77,7 @@ memreplace(mdata *md, char *find , char *repl, off_t meminc);
 void
 memresize(mdata *md, off_t meminc);
 
-size_t
+int
 memlinestostr(mdata *md);
 
 size_t
@@ -115,13 +104,13 @@ trimspace(char *buf);
 void
 destroystrarray(char **str_array, size_t count);
 
-char
-*cfg_pathtofile(const char *prn, const char *fn);
-
 int
-inlist(const char *find, char **list);
+instrlist(const char *find, char **list);
 
 int
 in_uch_array(const unsigned char, unsigned char *);
+
+char
+**memblocktoarray(mdata *md, int n);
 
 #endif

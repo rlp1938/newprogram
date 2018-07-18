@@ -53,7 +53,7 @@ recursedir(char *dirname, mdata *ddat, rd_data *rd)
 		/* If there is list of paths to reject check that any dirs
 		 * found are not in rd->rejectlist[] */
 		if ((rd->rejectlist) && de->d_type == DT_DIR) {
-			if(inlist(joinbuf, rd->rejectlist)) continue;
+			if(instrlist(joinbuf, rd->rejectlist)) continue;
 		}
 		// Output only file system objects named in rd->fsobj[]
 		if (in_uch_array(de->d_type, rd->fsobj)) {

@@ -39,13 +39,13 @@ char
    * Returns list of C strings with NULL terminated list.
 */
 	mdata *md = readfile(path, 1, 0);
-	size_t n = memlinestostr(md);
+	int n = memlinestostr(md);
 	if (!n)
 	{
 		fprintf(stderr, "File %s contains no line delimeters,\n", path);
 		exit(EXIT_FAILURE);
 	}
-	return memblocktoarray(md, 0);
+	return memblocktoarray(md, n);
 } // getfile_str()
 
 time_t
@@ -56,7 +56,7 @@ getfile_mtime(const char *path)
 	struct stat sb;
 	int res = lstat(path, &sb);
 	if (res == -1) return 0;	// 1970-01-01
-	return sb.st_atime;
+	return sb.st_mtime;
 } // getfile_mtime()
 
 int
@@ -96,7 +96,7 @@ dumpstrblock(const char *tmpfn, mdata *md)
 } // dumpstrblock()
 
 ino_t
-getinode(char *path)
+getinode(const char *path)
 {	/* return the inode number if the path exists, if not abort */
 	struct stat sb;
 	if (lstat(path, &sb) == -1) {
@@ -114,15 +114,23 @@ touch(const char *fn)
 } // touch()
 
 void
-str2file(const char *fn, const char *s)
+str2file(const char *fn, const char *s, const char *mode)
 {/* Writes the C string s to file fn. The terminating '\0' of s will be
   * replaced by '\n'.
 */
+	int ok, w, a;
+	w = (strcmp(mode, "w") == 0);
+	a = (strcmp(mode, "a") == 0);
+	ok = (w || a);
+	if (!ok) {
+		fprintf(stderr, "Mode value %s not permitted.\n", mode);
+		exit(EXIT_FAILURE);
+	}
 	size_t len = strlen(s);
 	char *buf = xmalloc(len + 1);
 	strcpy(buf, s);
 	buf[len] = '\n';
-	writefile(fn, buf, buf+len+1, "w");
+	writefile(fn, buf, buf+len+1, mode);
 	free(buf);
 } // str2file()
 
@@ -154,6 +162,11 @@ writefile(const char *filename, char *fro, char *to, const char *fmode)
 	*/
 	off_t len = to - fro;
 	if (len <= 0) return;
+	char *list[] = {"w", "a", NULL};
+	if (!instrlist(fmode, list)) {
+		fputs("whoopee duck.", stderr);
+	}
+
 	FILE *fpo;
 	int closeit = 1;
 	if (strcmp("-", filename) == 0) {
@@ -171,18 +184,6 @@ writefile(const char *filename, char *fro, char *to, const char *fmode)
 	}
 	if (closeit) dofclose(fpo);
 } // writefile()
-
-void
-strblocktolines(char *fro, char *to)
-{	/* takes a block of contiguous C strings and formats them to
-	 * printable lines, ie replace '\0' with '\n'.
-	*/
-	char *cp = fro;
-	while (cp < to) {
-		if (*cp == 0) *cp = '\n';
-		cp++;
-	}
-} // strblocktolines()
 
 
 mdata
@@ -279,11 +280,9 @@ dolink(const char *fr, const char *to)
 } // dolink()
 
 char
-*cfg_getparameter(const char *prn, const char *fn, const char *param)
+*cfg_getparameter(char *prn, char *fn, const char *param)
 { /* Return the string that param points to. */
-	char *pp = cfg_pathtofile(prn, fn);
-	mdata *md = readfile(pp, 1, 0);
-	free(pp);
+	mdata *md = getconfigfile(prn, fn);
 	memlinestostr(md);
 	char *p = memmem(md->fro, md->to - md->fro, param, strlen(param));
 	if (!p) {
@@ -303,3 +302,13 @@ char
 	free_mdata(md);
 	return ret;
 } // cfg_getparameter()
+
+void
+dounlink(const char *p)
+{/* unlink with error handling. */
+	int res = unlink(p);
+	if (res == -1) {
+		perror(p);
+		exit(EXIT_FAILURE);
+	}
+} // dounlink()

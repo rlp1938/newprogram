@@ -29,7 +29,8 @@
 #include "files.h"
 #include "dirs.h"
 
-int checkfirstrun(char *progname, ...);
-void firstrun(char *progname, ...);
+int checkfirstrun(char *progname, char **names);
+void firstrun(char *progname, char **names);
+void rmconfigs(const char cfgdir);
 
 #endif

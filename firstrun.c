@@ -19,27 +19,23 @@
 
 #include "firstrun.h"
 
-int checkfirstrun(char *progname, ...)
+int checkfirstrun(char *progname, char **names)
 {
-	va_list ap;
 	// construct the user's path to .config
 	char upath[PATH_MAX];
 	sprintf(upath, "%s/.config/%s/", getenv("HOME"), progname);
 	if (!exists_dir(upath)) return 0;
-	size_t len = strlen(upath);
-	va_start(ap, progname);
-	char *cp;
-	while (1) {
-		cp = va_arg(ap, char *);
-		if(!cp) break;	// last va must be NULL
-		strcpy(upath + len, cp);
-		if(!exists_file(upath)) return 0;
+	int i;
+	for (i = 0; names[i]; i++) {
+		char buf[PATH_MAX];
+		strcpy(buf, upath);
+		strjoin(buf, '/', names[i]);
+		if(!exists_file(buf)) return 0;
 	}
-	va_end(ap);
 	return 1;
 } // checkfirstrun()
 
-void firstrun(char *progname, ...)
+void firstrun(char *progname, char **names)
 {
 	/* The purpose of this function is to copy a caller specified set
 	 * of files from /usr/local/share/<progname>/ to
@@ -49,42 +45,39 @@ void firstrun(char *progname, ...)
 	 * confidence to do this will no doubt have the ability to make
 	 * the necessary copies by hand instead of relying on this feature.
 	*/
-	va_list ap;
 	// To
 	char pathto[PATH_MAX];
 	sprintf(pathto, "%s/.config/%s/", getenv("HOME"), progname);
-	if(!exists_dir(pathto)) newdir(pathto, 0);
+	if (!exists_dir(pathto)) {
+		newdir(pathto, 0);
+	} else {
+		rmconfigs(pathto);
+	}
 	size_t tolen = strlen(pathto);
 	// From
 	char pathfr[PATH_MAX];
 	sprintf(pathfr, "/usr/local/share/%s/", progname);
 	size_t frlen = strlen(pathfr);
-
-	va_start(ap, progname);	// allow this to work with 0 named files.
-	char *cp;
-	while (1) {
-		cp = va_arg(ap, char *);
-		if (!cp) break;	// last va must be NULL.
-		strcpy(pathto + tolen, cp);	// To
-		strcpy(pathfr + frlen, cp);	// From
+	// File copy
+	int i;
+	for (i = 0; names[i]; i++) {
+		strcpy(pathfr + frlen, names[i]);
+		strcpy(pathto + tolen, names[i]);
 		copyfile(pathfr, pathto);
 	}
-	va_end(ap);
 } // firstrun()
 
-void dosystem(const char *cmd)
-{
-	const int status = system(cmd);
-
-    if (status == -1) {
-        fprintf(stderr, "system failed to execute: %s\n", cmd);
-        exit(EXIT_FAILURE);
-    }
-
-    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-        fprintf(stderr, "%s failed with non-zero exit\n", cmd);
-        exit(EXIT_FAILURE);
-    }
-
-    return;
-} // dosystem()
+void rmconfigs(const char cfgdir)
+{/* This is run to ensure that there are no unused config files left. */
+	mdata *md = init_mdata();
+	rd_data *rd = init_recursedir(NULL, 2*PATH_MAX, DT_REG, 0);
+	int res = recursedir(cfgdir);
+	if (res) {
+		char *cp = md->fro;
+		while (cp < md->to) { // redundant testing
+			if (exists_file(cp)) dounlink(cp);
+			cp += strlen(cp) + 1;
+		}
+	}
+	free_recursedir(rd, md);
+} // rmconfigs()

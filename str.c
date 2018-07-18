@@ -24,50 +24,6 @@
  * */
 
 #include "str.h"
-char
-*getcfgfn(const char *prg, const char *fn)
-{/* assemble a config file name from the given parameters */
-	char buf[PATH_MAX];
-	sprintf(buf, "%s/.config/%s/%s", getenv("HOME"), prg, fn);
-	return xstrdup(buf);
-} // getcfgfn()
-
-char
-*get_home(void)
-{
-	char buf[PATH_MAX];
-	sprintf(buf, "%s", getenv("HOME"));
-	return xstrdup(buf);
-} // get_home()
-
-size_t
-home_len(void)
-{
-	char buf[PATH_MAX] = {0};
-	sprintf(buf, "%s", getenv("HOME"));
-	return strlen(buf);
-} // home_len()
-
-char
-**memblocktoarray(mdata *md, int islines)
-{/* Memory data, C strings or lines with '\n'.
-  * Make a char * array of them.
-  * To be NULL terminated.
-*/
-	size_t num;
-	if (islines) num = memlinestostr(md);	// '\n' terminated.
-	else num = countmemstr(md);				// '\0' terminated.
-	size_t rqd = (num + 1) * sizeof(char *);
-	char **result = xmalloc(rqd);
-	memset(result, 0, rqd);
-	char *cp = md->fro;
-	size_t i = 0;
-	while (cp < md->to) {
-		result[i++] = xstrdup(cp);
-		cp += strlen(cp) + 1;
-	}
-	return result;
-} // memblocktoarray()
 
 size_t
 lenrequired(size_t nominal_len)
@@ -102,6 +58,12 @@ char
 		buf = thename;
 	} else {
 		buf = xmalloc(PATH_MAX);
+	}
+	size_t len = 5/*"/tmp/"*/ + strlen(prname) + strlen(getenv("USER"))
+				+ 5 /*"32767" (pid)*/ + strlen(extrafn);
+	if (len >= PATH_MAX) {
+		fprintf(stderr, "Name too long: %lu\n", len);
+		exit(EXIT_FAILURE);
 	}
 	sprintf(buf, "/tmp/%s%s%d%s.lst", prname, getenv("USER"), getpid(),
 				extrafn);
@@ -212,7 +174,7 @@ memresize(mdata *dd, off_t change)
 	}
 } // memresize()
 
-size_t
+int
 memlinestostr(mdata *md)
 { /* In the block of memory enumerated by md, replace all '\n' with
    * '\0' and return the number of replacements done.
@@ -360,14 +322,14 @@ char
    * before and/or after the actual text items.
   */
 	size_t lcount = 0;
-	size_t ilen = strlen(items);
+	int ilen = strlen(items);
 	if (ilen > PATH_MAX) {
 		fputs("Input string too long, quitting!\n", stderr);
 		exit(EXIT_FAILURE);
 	}
 	char list[PATH_MAX];
 	strcpy(list, items);
-	size_t i;
+	int i;
 	for (i = 0; i < ilen; i++) {
 		if(list[i] == sep) lcount++;
 	}
@@ -434,16 +396,8 @@ destroystrarray(char **wordlist, size_t count)
 	free(wordlist);
 } // destroystrarray()
 
-char
-*cfg_pathtofile(const char *prn, const char *fn)
-{/* return path to a named config file. */
-	char buf[PATH_MAX];
-	sprintf(buf, "%s/.config/%s/%s", getenv("HOME"), prn, fn);
-	return xstrdup(buf);
-} // cfg_pathtofile()
-
 int
-inlist(const char *name, char **list)
+instrlist(const char *name, char **list)
 {	/* return 1 if name is found in list, 0 otherwise. */
 	if (!list) return 0;	// list may not have been made.
 	int i = 0;
@@ -452,7 +406,7 @@ inlist(const char *name, char **list)
 		i++;
 	}
 	return 0;
-} // inlist()
+} // instrlist()
 
 int
 in_uch_array(const unsigned char c, unsigned char *buf)
@@ -464,3 +418,17 @@ in_uch_array(const unsigned char c, unsigned char *buf)
 	}
 	return 0;
 } // in_uch_array()
+
+char
+**memblocktoarray(mdata *md, int n)
+{/* returns an array of char *, NULL terminated */
+	char *cp = md->fro;
+	char **res = xmalloc((n+1) * sizeof(char *));
+	int i;
+	for (i = 0; i < n; i++) {
+		res[i] = cp;
+		cp += strlen(cp) + 1;
+	}
+	res[n] = (char *)NULL;
+	return res;
+}
